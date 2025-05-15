@@ -1,350 +1,194 @@
-# SYN - Универсальный генератор синтетических данных
+# SYN - Domain-Specific Language for Datasets
 
-Мощная утилита на Go для генерации и обработки синтетических данных с использованием LLM API и источников данных, таких как Hugging Face Datasets.
+A powerful Go utility with a domain-specific language (DSL) for processing datasets through LLM APIs and other data sources.
 
-## Особенности
+## Features
 
-- 🚀 **Высокая производительность**: Параллельная обработка для максимальной скорости
-- 🔧 **Гибкая конфигурация**: Настройка через файл конфигурации или аргументы командной строки
-- 🧩 **Универсальность**: Работа с любыми JSON-датасетами и структурами данных
-- 🧠 **Интеграция с LLM API**: Обработка данных через модели машинного обучения
-- 📊 **Фильтрация**: Встроенная фильтрация данных по числовым или строковым значениям
-- 🛡️ **Обработка ошибок**: Надежное логирование и обработка исключений
-- ⏱️ **Сохранение прогресса**: Автоматическое сохранение результатов при прерывании
-- 🤗 **Интеграция с Hugging Face**: Прямая загрузка и обработка датасетов из Hugging Face
-- 🎨 **Красивый интерфейс**: Интерактивные прогресс-бары, спиннеры и цветной вывод в стиле docker-compose
-- 📝 **Подробная статистика**: Информативный вывод о ходе выполнения задачи
-- 🧬 **Режим без LLM**: Возможность работать только с данными без их обработки через LLM
+- 🔧 **Simple DSL Syntax**: Intuitive language for dataset operations
+- 🧩 **Versatility**: Works with various data formats and structures
+- 🧠 **LLM API Integration**: Process data through machine learning models
+- 📊 **Data Filtering**: Built-in filtering by numeric or string values
+- 🛡️ **Robust Error Handling**: Reliable processing with detailed diagnostics
+- 🎨 **Beautiful Interface**: Colorful output with progress indicators
+- 📝 **Detailed Statistics**: Informative output about task progress
 
-## Установка
+## Installation
 
 ```bash
-# Клонирование репозитория
+# Clone repository
 git clone https://github.com/Raumberg/syn.git
 cd syn
 
-# Сборка
-go build -o syn ./cmd/main.go
+# Build
+make build
 ```
 
-## Быстрый старт
-
-### Создание примера конфигурации
+## Quick Start
 
 ```bash
-./syn --generate-config
+# Run with the example DSL file
+./sync --compile examples/example1_simple.syn
+
+# Run with detailed output in debug mode
+./sync --compile examples/example1_simple.syn --debug
+
+# Or use the make command for a quick example
+make example
 ```
 
-Это создаст файл `config_example.json` с примером конфигурации, который вы можете изменить для своих нужд.
+## Command Line Parameters
 
-### Запуск с конфигурационным файлом
+- `--compile` or `-c` - path to the DSL code file
+- `--save` - save the generated Python script
+- `--python` - path to the Python interpreter (default `python3`)
+- `--outdir` - directory for saving generated scripts (default `output`)
+- `--debug` - enable debug mode (detailed output)
 
-```bash
-./syn --config=your_config.json
+## DSL Syntax
+
+### Basic Constructs
+
+#### FROM - Data Source
+
+Specifies which dataset to load from Hugging Face.
+
+```
+FROM squad
 ```
 
-### Запуск с параметрами командной строки
+or with an instruction block:
 
-```bash
-./syn --input=input.json --output-dir=results --api-url=http://localhost:8000/v1
 ```
-
-### Запуск с использованием Hugging Face
-
-```bash
-./syn --hf --hf-dataset=zwhe99/DeepMath-103K --hf-fields=question,final_answer,r1_solution_3,difficulty --hf-limit=1000 --filter --filter-field=difficulty --filter-min=8
-```
-
-### Запуск в режиме без LLM (только загрузка данных)
-
-```bash
-./syn --hf --hf-dataset=squad --hf-limit=100 --no-llm
-```
-
-## Конфигурация
-
-Вы можете настроить Syn через JSON-конфигурацию или через аргументы командной строки.
-
-### Основные параметры
-
-| CLI параметр      | Описание                                     |
-|-------------------|----------------------------------------------|
-| `--config`        | Путь к конфигурационному файлу               |
-| `--input`         | Входной файл с датасетом                     |
-| `--output-dir`    | Директория для выходных данных               |
-| `--output-file`   | Имя выходного файла                          |
-| `--api-url`       | URL LLM API                                  |
-| `--api-key`       | Ключ авторизации API                         |
-| `--model`         | Название модели                              |
-| `--concurrency`   | Количество параллельных запросов             |
-| `--temperature`   | Температура для LLM API                      |
-| `--system-prompt` | Системный промпт для LLM                     |
-| `--no-llm`        | Режим без использования LLM (только данные)  |
-| `--debug`         | Режим отладки с подробным выводом            |
-
-### Параметры фильтрации
-
-| CLI параметр      | Описание                                     |
-|-------------------|----------------------------------------------|
-| `--filter`        | Включить фильтрацию данных                   |
-| `--filter-field`  | Поле для фильтрации                          |
-| `--filter-min`    | Минимальное значение для фильтрации          |
-| `--filter-max`    | Максимальное значение для фильтрации         |
-| `--filter-op`     | Оператор для фильтрации (eq, gt, lt, gte)    |
-
-### Параметры Hugging Face
-
-| CLI параметр      | Описание                                     |
-|-------------------|----------------------------------------------|
-| `--hf`            | Использовать Hugging Face Datasets           |
-| `--hf-dataset`    | Имя датасета (например, squad)               |
-| `--hf-split`      | Раздел датасета (например, train)            |
-| `--hf-fields`     | Поля для выбора, через запятую                |
-| `--hf-stream`     | Использовать потоковый режим загрузки         |
-| `--hf-limit`      | Ограничить количество записей                 |
-| `--hf-offset`     | Начать с указанного смещения                  |
-| `--hf-shuffle`    | Перемешать записи                            |
-| `--hf-seed`       | Seed для перемешивания                        |
-| `--hf-filter`     | Фильтры в формате key=value,key2=value2      |
-| `--hf-python`     | Путь к интерпретатору Python                 |
-
-### Пример конфигурационного файла
-
-```json
-{
-  "api": {
-    "base_url": "http://0.0.0.0:8000/v1",
-    "api_key": "token-abc123",
-    "model": "t-tech/T-pro-it-1.0"
-  },
-  "io": {
-    "input_file": "input.json",
-    "output_dir": "output",
-    "output_file": "dataset.json"
-  },
-  "huggingface": {
-    "enabled": true,
-    "python_path": "python3",
-    "dataset_name": "zwhe99/DeepMath-103K",
-    "split": "train",
-    "streamable": false,
-    "shuffle": true,
-    "seed": 42,
-    "limit": 1000,
-    "offset": 0,
-    "fields": ["question", "final_answer", "r1_solution_3", "difficulty"],
-    "filters": {
-      "language": "English"
-    },
-    "extra_args": {
-      "local_dir": "./cache"
-    }
-  },
-  "processing": {
-    "max_concurrency": 8,
-    "temperature": 0.6,
-    "no_llm": false,
-    "filter": {
-      "enabled": true,
-      "field": "difficulty",
-      "min_value": 8,
-      "operator": "gte"
-    }
-  },
-  "fields": {
-    "input": [
-      {
-        "input_field": "question",
-        "output_field": "problem",
-        "processor_id": "llm"
-      },
-      {
-        "input_field": "final_answer",
-        "output_field": "answer",
-        "processor_id": "llm"
-      },
-      {
-        "input_field": "r1_solution_3",
-        "output_field": "reflection",
-        "processor_id": "llm"
-      }
-    ]
-  },
-  "prompt": {
-    "system": "Тебе будут даны выражения, задачи или размышления по математике. Твоя задача перевести их на русский язык."
-  },
-  "debug": false
+FROM zwhe99/DeepMath-103K {
+    FIELDS ["question", "final_answer", "difficulty"]
+    FILTER difficulty >= 8
 }
 ```
 
-## Примеры использования
+#### FIELDS - Field Selection
 
-### Перевод математических задач с английского на русский
+Defines which fields to select from the dataset.
+
+```
+FIELDS ["question", "answers", "context"]
+```
+
+or for a single field:
+
+```
+FIELDS "question"
+```
+
+#### FILTER - Data Filtering
+
+Allows filtering data by various criteria.
+
+```
+FILTER difficulty >= 8
+```
+
+or for nested fields:
+
+```
+FILTER instruction {
+    language = "Russian";
+    length >= 2048;
+}
+```
+
+#### SAVE - Saving Results
+
+Allows saving the processed dataset to a file:
+
+```
+SAVE "output/result.json"
+```
+
+### Comments
+
+DSL supports single-line Python-style comments:
+
+```
+# This is a comment
+FROM squad # This is also a comment
+```
+
+## Examples
+
+### Simple Example
+
+```
+FROM squad
+FIELDS ["question", "answers"]
+SAVE "output.json"
+```
+
+### Example with Filtering
+
+```
+FROM zwhe99/DeepMath-103K {
+    FIELDS ["question", "final_answer", "difficulty"]
+    FILTER difficulty >= 8
+}
+SAVE "filtered_math.json"
+```
+
+### Example with Multiple Datasets
+
+```
+FROM squad {
+    FIELDS ["question", "answers", "context"]
+    FILTER context.length <= 2000
+}
+
+FROM zwhe99/DeepMath-103K {
+    FIELDS ["question", "final_answer", "difficulty"]
+    FILTER difficulty >= 8
+}
+
+SAVE "latest_dataset.json"
+```
+
+## How It Works
+
+1. SYN parses your DSL script into an abstract syntax tree (AST)
+2. Compiles AST into equivalent Python code using Hugging Face Datasets API
+3. Executes the generated code for data processing
+4. Saves results in the specified format
+
+## Usage in Command Line
 
 ```bash
-./syn --config=math_translation.json
+# Basic usage
+./sync --compile script.syn
+
+# Save the generated Python script
+./sync --compile script.syn --save
+
+# Specify the path to the Python interpreter
+./sync --compile script.syn --python /usr/bin/python3.9
+
+# Specify the directory for scripts
+./sync --compile script.syn --outdir ./scripts
 ```
 
-### Фильтрация данных по сложности и обработка через LLM
+## Syntax Reference
 
-```bash
-./syn --input=deepmath.json --output-dir=difficult_problems --system-prompt="Переведи на русский, сохраняя математические обозначения" --filter --filter-field=difficulty --filter-min=8
-```
+### Supported Operators
 
-### Быстрая обработка большого набора данных
+- `FROM` - loads a dataset from a source
+- `FIELDS` - selects fields from the dataset
+- `FILTER` - filters data by criteria
+- `SAVE` - saves the processed dataset
 
-```bash
-./syn --input=large_dataset.json --concurrency=16 --temperature=0.7
-```
+### Expressions in FILTER
 
-### Работа с Hugging Face Datasets
+FILTER supports the following operators:
+- `=`, `==` - equality
+- `!=` - inequality
+- `>`, `>=` - greater than, greater than or equal
+- `<`, `<=` - less than, less than or equal
 
-```bash
-# Загрузка датасета DeepMath и фильтрация по сложности
-./syn --hf --hf-dataset=zwhe99/DeepMath-103K --hf-fields=question,final_answer,r1_solution_3,difficulty --filter --filter-field=difficulty --filter-min=8
+## Contributing
 
-# Использование ограничения по количеству записей
-./syn --hf --hf-dataset=squad --hf-split=validation --hf-limit=100 --hf-shuffle
-
-# Использование фильтров Hugging Face
-./syn --hf --hf-dataset=squad --hf-filter="language=en,type=question"
-```
-
-### Загрузка данных без обработки через LLM
-
-```bash
-# Загрузить и сохранить данные из Hugging Face без обработки через LLM
-./syn --hf --hf-dataset=zwhe99/DeepMath-103K --hf-limit=50 --no-llm
-
-# Фильтровать и сохранить локальные данные без обработки через LLM
-./syn --input=dataset.json --filter --filter-field=score --filter-min=0.8 --no-llm
-```
-
-### Отладка и диагностика
-
-```bash
-# Включить режим отладки для подробного вывода
-./syn --hf --hf-dataset=squad --hf-limit=10 --debug
-
-# Просмотр прогресса с интерактивными индикаторами
-./syn --input=large_dataset.json --concurrency=16
-```
-
-## Интерактивный пользовательский интерфейс
-
-Syn предоставляет богатый интерактивный CLI-интерфейс в стиле docker-compose с:
-
-- 🌈 **Цветной вывод**: Цветовое оформление сообщений и статусов:
-  - Зеленый цвет для успешных операций
-  - Красный для ошибок
-  - Желтый для предупреждений
-  - Голубой для информационных сообщений
-
-- 🔄 **Спиннеры**: Анимированные индикаторы загрузки для:
-  - Инициализации приложения
-  - Загрузки данных из Hugging Face
-  - Чтения файлов
-  - Сохранения результатов
-
-- 📊 **Прогресс-бары**: Интерактивные индикаторы выполнения:
-  - Визуальный прогресс обработки с цветовым оформлением
-  - Показ количества обработанных элементов
-  - Скорость обработки (элементов в секунду)
-  - Автоматическое обновление
-
-- ⏱️ **Таймеры**: Информация о времени выполнения:
-  - Общее время работы приложения
-  - Автоматическое форматирование в часы, минуты и секунды
-
-- 📈 **Статистика**: Подробный отчет после выполнения:
-  - Количество успешно обработанных элементов
-  - Количество ошибок (если есть)
-  - Общее количество обработанных элементов
-
-- 💾 **Размеры файлов**: Человекочитаемый формат размеров:
-  - Автоматическое преобразование в КБ, МБ, ГБ
-  - Отображение размера выходного файла
-
-- 📋 **Улучшенный режим отладки**: 
-  - Подробные, но структурированные сообщения
-  - Эмодзи для визуальной классификации событий
-  - Вывод только в режиме отладки (--debug)
-
-### Режим без LLM
-
-В режиме `--no-llm`:
-
-- API параметры скрываются и отображаются как "NULL"
-- Данные не обрабатываются через языковую модель
-- Значительно ускоряется работа приложения
-- Можно использовать для предварительной подготовки и фильтрации данных
-- Идеально для отладки процесса извлечения данных без затрат на API
-
-```bash
-./syn --hf --hf-dataset=squad --hf-limit=100 --no-llm
-```
-
-## Архитектура
-
-Syn построен на модульной архитектуре с четким разделением ответственности:
-
-```
-syn/
-├── cmd/
-│   └── main.go                 # Точка входа
-├── internal/
-│   ├── client/                 # API клиенты
-│   │   └── openai.go           # Клиент для LLM API
-│   ├── generator/              # Генераторы и процессоры
-│   │   └── generator.go        # Основной генератор данных
-│   ├── models/                 # Модели данных
-│   │   ├── config.go           # Конфигурация приложения
-│   │   └── data.go             # Структуры данных
-│   └── processor/              # Процессоры данных
-│       ├── processor.go        # Базовый интерфейс процессора
-│       └── hf_processor.go     # Процессор для Hugging Face
-├── output/                     # Выходные данные (по умолчанию)
-└── config_example.json         # Пример конфигурации
-```
-
-## Системные требования
-
-- Go 1.18 или выше
-- Python 3.6+ (для функций Hugging Face)
-- Пакеты Python: `datasets`, `numpy`
-- Доступ к Hugging Face API (для функций HF)
-- Доступ к LLM API (для обработки через LLM)
-
-## Оптимизация производительности
-
-Для достижения наилучшей производительности:
-
-1. **Установите оптимальное значение параллелизма**:
-   ```bash
-   ./syn --concurrency=16 # Установите в соответствии с количеством ядер CPU
-   ```
-
-2. **Используйте режим без LLM для предварительной обработки**:
-   ```bash
-   ./syn --input=large_dataset.json --filter --filter-field=quality --filter-min=0.7 --no-llm
-   ```
-
-3. **Применяйте фильтрацию для уменьшения объема данных**:
-   ```bash
-   ./syn --hf --hf-dataset=large_dataset --filter --filter-field=length --filter-max=1000
-   ```
-
-4. **Ограничивайте размер данных с Hugging Face**:
-   ```bash
-   ./syn --hf --hf-dataset=huge_dataset --hf-limit=10000
-   ```
-
-## Благодарности
-
-- [Hugging Face](https://huggingface.co/) за доступ к богатому набору датасетов
-- [progressbar](https://github.com/schollz/progressbar) и [spinner](https://github.com/briandowns/spinner) за красивые компоненты CLI
-- [color](https://github.com/fatih/color) за поддержку цветного вывода
-
-## Лицензия
-
-MIT License 
+Contributions are welcome! Please feel free to submit a Pull Request. 

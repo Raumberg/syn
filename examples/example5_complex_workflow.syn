@@ -1,0 +1,147 @@
+# Example 5: Complex workflow
+# Advanced example demonstrating a complex data processing pipeline
+# with multiple generation and filtering steps
+
+# Global settings
+PRAGMA CONCURRENCY 24  # Use many threads for maximum speed
+PRAGMA AUTOSAVE        # Automatic saving of results
+
+# Step 1: Loading scientific articles and their preprocessing
+FROM arxiv/medicine-abstracts {
+    # Select fields
+    FIELDS ["title", "abstract", "authors", "categories", "date"]
+    
+    # Filter only recent COVID-19 articles
+    FILTER categories = "covid-19"
+    FILTER date >= "2022-01-01"
+    
+    # Configure model for high-quality scientific text processing
+    USING {
+        MODEL t-tech/T-pro-it-1.0
+        KEY token-abc123
+        URL "http://localhost:8000/v1"
+    }
+    
+    # Define a system prompt for the scientific assistant
+    SYSTEM PROMPT scientific_assistant {
+        "You are a scientific assistant with deep knowledge in medicine, biology, and epidemiology. Your task is to carefully analyze scientific articles about COVID-19 and extract key information from them."
+    }
+    
+    # Create a prompt for translation and summarization
+    USER PROMPT translate_summarize {
+        FIELDS ["title", "abstract"]
+        "Article: {title}\n\nAbstract: {abstract}\n\nTranslate the title and abstract of this scientific article into Russian. Also, compose a brief summary of the main findings and significance of the study (no more than 5 sentences)."
+    }
+    
+    # Generate Russian summary
+    GENERATE abstract AS summary_ru {
+        TEMPERATURE 0.3
+        TOKENS 300
+        PROMPT translate_summarize
+    }
+
+    # Create a prompt for extracting key findings
+    USER PROMPT extract_findings {
+        FIELDS ["abstract"]
+        "Analyze the following abstract of a scientific article about COVID-19 and extract from it:\n
+        1. Main research findings (numbered list)\n
+        2. Research methods used\n
+        3. Sample size or data volume\n
+        4. Limitations of the study, if mentioned\n\n
+        Abstract: {abstract}"
+    }
+    
+    # Generate structured results
+    GENERATE abstract AS key_findings {
+        TEMPERATURE 0.2
+        TOKENS 400
+        PROMPT extract_findings
+    }
+    
+    # Save intermediate result
+    SAVE "processed_covid_articles.json"
+}
+
+# Step 2: Loading fresh COVID-19 news
+FROM news-articles/covid {
+    # Select fields
+    FIELDS ["headline", "content", "source", "date"]
+    
+    # Filter only the latest news
+    FILTER date >= "2023-01-01"
+    
+    USING {
+        MODEL t-tech/T-pro-it-1.0
+        KEY token-abc123
+        URL "http://localhost:8000/v1"
+    }
+    
+    # Define a system prompt for news analysis
+    SYSTEM PROMPT news_analyzer {
+        "You are a news analysis expert specializing in medical topics.\n 
+        Your task is to objectively analyze news articles about COVID-19,\n 
+        identify factual information and separate it from opinions, assumptions, or exaggerations."
+    }
+    
+    # Create a prompt for news analysis
+    USER PROMPT analyze_news {
+        FIELDS ["headline", "content"]
+        "Headline: {headline}\n\nContent: {content}\n\n
+        Analyze this news article about COVID-19 and provide the following information:\n
+        1. Brief objective presentation of facts (maximum 3 sentences)\n
+        2. Highlight 3-5 key facts from the article\n
+        3. Rate the credibility of the information on a scale from 1 to 10\n
+        4. Indicate whether the article contains assumptions, opinions, or exaggerations"
+    }
+    
+    # Generate news analysis
+    GENERATE content AS news_analysis {
+        TEMPERATURE 0.4
+        TOKENS 350
+        PROMPT analyze_news
+    }
+    
+    # Save intermediate result
+    SAVE "analyzed_covid_news.json"
+}
+
+# Step 3: Combine scientific articles and news
+MERGE ds_arxiv_medicine_abstracts, ds_news_articles_covid
+
+# Step 4: Create a comprehensive analysis of all data
+FROM merged_ds_1 {
+    # Configure a powerful model for final analysis
+    USING {
+        MODEL t-tech/T-pro-it-1.0
+        KEY token-abc123
+        URL "http://localhost:8000/v1"
+    }
+    
+    # System prompt for the analyst
+    SYSTEM PROMPT final_analyst {
+        "You are an expert in integrating scientific data and news information. 
+        Your task is to create a comprehensive, objective review that compares 
+        scientific discoveries with how this information is presented in the news."
+    }
+    
+    # Create a prompt for data integration
+    USER PROMPT integrate_data {
+        FIELDS ["key_findings", "news_analysis", "date"]
+        "Scientific data: {key_findings}\n\nNews analysis: {news_analysis}\n\nDate: {date}\n\n
+        Create a comprehensive analytical review that:\n
+        1. Compares scientific findings with information in the news\n
+        2. Identifies matches and discrepancies between scientific information and news reports\n
+        3. Indicates how accurately the media reflects current scientific data\n
+        4. Offers recommendations for more accurate public information"
+    }
+    
+    # Generate comprehensive analysis
+    GENERATE key_findings AS integrated_analysis {
+        TEMPERATURE 0.2
+        TOKENS 600
+        PROMPT integrate_data
+    }
+    
+    # Save the final result
+    SAVE "covid_integrated_analysis.json"
+} 

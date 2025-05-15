@@ -1,0 +1,12 @@
+# Example 1: Simple dataset query
+# This example demonstrates the basic capabilities of SYN DSL
+
+# Load the squad dataset (questions and answers)
+FROM squad {
+    # Select only the fields we need
+    FIELDS ["question", "answers", "context"]
+    
+  
+    # Save the result
+    SAVE "simple_questions.json"
+} 

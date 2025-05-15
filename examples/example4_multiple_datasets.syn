@@ -1,0 +1,65 @@
+# Example 4: Working with multiple datasets
+# Demonstrates loading, processing, and merging multiple datasets
+
+# Global API settings (common for all datasets)
+USING {
+    MODEL t-tech/T-pro-it-1.0
+    KEY token-abc123
+    URL "http://localhost:8000/v1"
+}
+
+# First dataset - questions from SQuAD competition
+FROM squad {
+    # Select minimal set of fields
+    FIELDS ["question", "answers"]
+    
+    # Filter short questions
+    FILTER question {
+        length >= 20;  # Only questions longer than 20 characters
+    }
+
+    # Create a prompt for determining question difficulty
+    SYSTEM PROMPT difficulty_analyzer {
+        "You are an expert in analyzing question difficulty. Rate the difficulty of the provided question on a scale from 1 to 10, where 1 is a very simple question and 10 is a very complex question requiring expert knowledge."
+    }
+    
+    USER PROMPT analyze_difficulty {
+        FIELDS ["question"]
+        "Determine the difficulty of the following question on a scale from 1 to 10 and explain your rating in 1-2 sentences: {question}"
+    }
+    
+    # Add a field with difficulty assessment
+    GENERATE question AS difficulty_analysis {
+        TEMPERATURE 0.3
+        TOKENS 100
+        PROMPT analyze_difficulty
+    }
+}
+
+# Second dataset - math problems
+FROM zwhe99/DeepMath-103K {
+    # Select fields
+    FIELDS ["question", "final_answer", "difficulty"]
+    
+    # Filter by difficulty
+    FILTER difficulty >= 6
+    
+    # Translate math problems to Russian
+    USER PROMPT translate_math {
+        FIELDS ["question"]
+        "Translate the following math problem into Russian, preserving all mathematical formulas and notations: {question}"
+    }
+    
+    # Generate translation
+    GENERATE question AS question_ru {
+        TEMPERATURE 0.2
+        TOKENS 200
+        PROMPT translate_math
+    }
+}
+
+# Merge two datasets
+MERGE ds_squad, ds_zwhe99_DeepMath_103K
+
+# Save the merged dataset
+SAVE "output/merged_questions.json" 

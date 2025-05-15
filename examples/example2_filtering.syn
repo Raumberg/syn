@@ -1,0 +1,19 @@
+# Example 2: Data filtering
+# Demonstrates dataset filtering using various criteria
+
+# Load the DeepMath dataset
+FROM zwhe99/DeepMath-103K {
+    # Select fields of interest
+    FIELDS ["question", "final_answer", "difficulty", "r1_solution_1"]
+    
+    # Filter only difficult problems (difficulty >= 8)
+    FILTER difficulty >= 8
+    
+    # Additionally filter by nested fields
+    FILTER final_answer {
+        length >= 10;  # Answer must be sufficiently detailed
+    }
+    
+    # Save the filtered dataset
+    SAVE "output/difficult_math_problems.json"
+} 

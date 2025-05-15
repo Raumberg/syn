@@ -1,0 +1,52 @@
+# Example 3: Using prompts and generating new fields
+# Demonstrates prompt creation and content generation using LLM
+
+# Global settings
+PRAGMA CONCURRENCY 12
+PRAGMA AUTOSAVE
+
+# Load a dataset with questions and answers
+FROM squad WITH STREAM {
+    # Select necessary fields
+    FIELDS ["question", "context"]
+    
+    # Configure API
+    USING {
+        MODEL t-tech/T-pro-it-1.0
+        KEY token-abc123
+        URL "http://localhost:8000/v1"
+    }
+    
+    # Define a system prompt (global context for all requests)
+    SYSTEM PROMPT summarizer_persona {
+        "You are an experienced teacher who can explain complex topics clearly and concisely. Your task is to create a brief summary for each question and context, highlighting the most important information."
+    }
+    
+    # Define a user prompt (template for field substitution)
+    USER PROMPT summarize_template {
+        FIELDS ["question", "context"]  # Fields that will be substituted in the template
+        "Question: {question}\n\nContext: {context}\n\nCreate a brief summary (no more than 3 sentences) that explains the essence of the question and relevant information from the context."
+    }
+
+    # Generate another new field - Russian translation of the question
+    USER PROMPT translate_template {
+        FIELDS ["question"]
+        "Translate the following question into Russian, preserving all details: {question}"
+    }
+    
+    # Generate a new summary field based on the prompt
+    GENERATE context AS summary {
+        TEMPERATURE 0.3             # Low temperature for more deterministic responses
+        TOKENS 150                  # Limit the size of generation
+        PROMPT summarize_template   # Use the previously defined template
+    }
+    
+    GENERATE question AS question_ru {
+        TEMPERATURE 0.2
+        TOKENS 100
+        PROMPT translate_template
+    }
+    
+    # Save the result with new fields
+    SAVE "enhanced_squad.json"
+} 
